@@ -600,6 +600,30 @@
     100%{transform:translateX(-100%);}
   }
 
+  .name-input-wrap{
+    margin-top:8px;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .name-input-label{
+    font-family:'Heebo',sans-serif; font-weight:700; font-size:12px;
+    letter-spacing:.1em; color:var(--neon-cyan);
+    text-shadow:0 0 6px rgba(46,230,255,.5);
+  }
+  .name-input{
+    width:200px;
+    text-align:center;
+    background:#0c0a18;
+    border:2px solid rgba(46,230,255,.35);
+    border-radius:14px;
+    padding:11px 16px;
+    font-family:'Rubik',sans-serif; font-weight:700; font-size:17px;
+    color:var(--chalk);
+    box-shadow:inset 0 0 10px rgba(46,230,255,.08), 0 0 14px rgba(46,230,255,.15);
+    outline:none;
+  }
+  .name-input::placeholder{color:#6a7386;}
+  .name-input:focus{border-color:var(--neon-cyan); box-shadow:inset 0 0 10px rgba(46,230,255,.15), 0 0 20px rgba(46,230,255,.35);}
+
   .coin-prompt{
     margin-top:22px;
     font-family:'Press Start 2P', monospace;
@@ -716,6 +740,10 @@
     <div class="eyebrow">אתגר הזריקות</div>
     <h1 class="title">דניאל לNBA</h1>
     <p class="subtitle">קלע כמה שיותר סלים בדקה וחצי</p>
+    <div class="name-input-wrap">
+      <label class="name-input-label" for="playerNameInput">איך קוראים לך?</label>
+      <input type="text" id="playerNameInput" class="name-input" placeholder="דניאל" maxlength="14" autocomplete="off">
+    </div>
     <button id="playBtn" class="play-btn"><span class="seam"></span>שחק</button>
     <div class="coin-prompt">לחץ להתחלה</div>
     <div class="highscore-badge"><span class="hs-label">שיא:</span><span id="highScoreValue">0</span></div>
@@ -779,6 +807,7 @@
       <div class="pause-title">⏸ הפסקה</div>
       <div class="pause-sub">הזמן קפוא. לחץ להמשיך</div>
       <button class="resume-btn" id="resumeBtn">המשך משחק</button>
+      <button class="home-btn" id="pauseHomeBtn">לדף הבית</button>
     </div>
 
     <div class="aim-panel" id="aimHorizontal">
@@ -841,6 +870,7 @@
   const pauseBtn = document.getElementById('pauseBtn');
   const pauseOverlay = document.getElementById('pauseOverlay');
   const resumeBtn = document.getElementById('resumeBtn');
+  const pauseHomeBtn = document.getElementById('pauseHomeBtn');
 
   const aimHorizontal = document.getElementById('aimHorizontal');
   const hBar = document.getElementById('hBar');
@@ -882,6 +912,26 @@
     if(endHighScoreValueEl) endHighScoreValueEl.textContent = hs;
   }
   refreshHighScoreDisplay();
+
+  const NAME_KEY = 'daniel-nba-playername';
+  const playerNameInput = document.getElementById('playerNameInput');
+  let playerName = 'דניאל';
+  function loadPlayerName(){
+    try{
+      const saved = localStorage.getItem(NAME_KEY);
+      if(saved && saved.trim()) playerName = saved.trim();
+    }catch(e){}
+    if(playerNameInput) playerNameInput.value = playerName === 'דניאל' ? '' : playerName;
+  }
+  function savePlayerNameFromInput(){
+    const v = (playerNameInput && playerNameInput.value || '').trim();
+    playerName = v.length ? v.slice(0,14) : 'דניאל';
+    try{ localStorage.setItem(NAME_KEY, playerName); }catch(e){}
+  }
+  loadPlayerName();
+  if(playerNameInput){
+    playerNameInput.addEventListener('input', savePlayerNameFromInput);
+  }
 
   function trophySVG(tier, uid){
     const palettes = {
@@ -1027,6 +1077,7 @@
   homeBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); refreshHighScoreDisplay(); showScreen(startScreen); });
 
   function startGame(){
+    savePlayerNameFromInput();
     score = 0;
     combo = 0;
     timeLeft = 90;
@@ -1109,8 +1160,26 @@
     sfxClick();
   }
 
+  function quitToHome(){
+    clearInterval(gameTimerInterval);
+    cancelAnimationFrame(hRAF);
+    cancelAnimationFrame(pRAF);
+    document.getAnimations().forEach(a=>{ try{ a.cancel(); }catch(e){} });
+    phase = 'idle';
+    paused = false;
+    aimHorizontal.classList.remove('active');
+    aimPower.classList.remove('active');
+    pauseOverlay.classList.remove('active');
+    ball.style.opacity = '0';
+    ballShadow.style.opacity = '0';
+    sfxClick();
+    refreshHighScoreDisplay();
+    showScreen(startScreen);
+  }
+
   pauseBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); pauseGame(); });
   resumeBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); resumeGame(); });
+  pauseHomeBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); quitToHome(); });
 
   function endGame(){
     clearInterval(gameTimerInterval);
@@ -1246,20 +1315,21 @@
     }, delay);
   }
 
-  const madeShotCompliments = [
-    'סל! דניאל תותח! 🏀',
-    'דניאל לNBA! 🔥',
-    'דניאל אלוף! 🏆',
-    'וואו דניאל! 💥',
-    'דניאל שולט במגרש! ⚡',
-    'מי זה דניאל? כוכב! ⭐',
-    'דניאל בלתי ניתן לעצירה!',
-    'איזה דניאל! סל מושלם 🎯',
-    'דניאל, פשוט מהאגדות!',
-    'סל! דניאל הבא של ה-NBA!'
+  const madeShotComplimentTemplates = [
+    'סל! {NAME} תותח! 🏀',
+    '{NAME} לNBA! 🔥',
+    '{NAME} אלוף! 🏆',
+    'וואו {NAME}! 💥',
+    '{NAME} שולט במגרש! ⚡',
+    'מי זה {NAME}? כוכב! ⭐',
+    '{NAME} בלתי ניתן לעצירה!',
+    'איזה {NAME}! סל מושלם 🎯',
+    '{NAME}, פשוט מהאגדות!',
+    'סל! {NAME} הבא של ה-NBA!'
   ];
   function randomCompliment(){
-    return madeShotCompliments[Math.floor(Math.random()*madeShotCompliments.length)];
+    const t = madeShotComplimentTemplates[Math.floor(Math.random()*madeShotComplimentTemplates.length)];
+    return t.replace(/{NAME}/g, playerName);
   }
 
   function showFeedback(text, cls){
