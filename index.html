@@ -216,6 +216,76 @@
   .highscore-row .highscore-badge{margin-top:0; font-size:9px; padding:6px 12px;}
   .highscore-row .hs-label{font-size:9px;}
 
+  .group-btn{
+    margin-top:16px;
+    background:transparent;
+    border:2px solid var(--neon-purple);
+    color:#d9b8ff;
+    font-family:'Rubik',sans-serif; font-weight:800; font-size:14px;
+    padding:11px 26px; border-radius:40px;
+    box-shadow:0 0 14px rgba(138,63,252,.3);
+    cursor:pointer;
+    text-shadow:0 0 6px rgba(138,63,252,.5);
+  }
+  .group-btn:active{transform:translateY(3px);}
+
+  /* ---------- GROUP / LEADERBOARD SCREEN ---------- */
+  #groupScreen{padding:20px; overflow-y:auto; justify-content:flex-start;}
+  .group-title{
+    font-family:'Rubik',sans-serif; font-weight:900; font-size:26px;
+    color:var(--gold);
+    text-shadow:0 0 14px rgba(242,193,78,.5);
+    margin:calc(env(safe-area-inset-top) + 10px) 0 4px;
+  }
+  .group-sub{font-size:12px; color:#9aa3b4; font-weight:600; margin-bottom:18px; text-align:center; max-width:320px;}
+  .lb-section{width:100%; max-width:380px; margin-bottom:18px;}
+  .lb-section-title{
+    font-family:'Heebo',sans-serif; font-weight:800; font-size:14px;
+    color:var(--neon-cyan); text-shadow:0 0 6px rgba(46,230,255,.5);
+    margin-bottom:8px; text-align:center;
+  }
+  .lb-table{
+    display:flex; flex-direction:column; gap:6px;
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;
+    padding:10px;
+  }
+  .lb-row{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 10px;
+    border-radius:10px;
+    background:rgba(255,255,255,.03);
+  }
+  .lb-row.me{background:rgba(46,230,255,.1); border:1px solid rgba(46,230,255,.35);}
+  .lb-rank{
+    width:26px; text-align:center;
+    font-family:'Press Start 2P', monospace; font-size:11px;
+    color:#9aa3b4;
+  }
+  .lb-crown{width:20px; height:20px; flex-shrink:0;}
+  .lb-name{flex:1; font-family:'Heebo',sans-serif; font-weight:700; font-size:14px; color:var(--chalk); text-align:right;}
+  .lb-score{font-family:'Press Start 2P', monospace; font-size:12px; color:var(--green); text-shadow:0 0 6px rgba(57,255,157,.5);}
+  .lb-empty{padding:16px; text-align:center; font-size:12px; color:#6a7386;}
+
+  .group-share-btn{
+    background:linear-gradient(180deg,#3ddc84,#1fae63);
+    border:none; color:#052a15;
+    font-family:'Rubik',sans-serif; font-weight:900; font-size:16px;
+    padding:14px 30px; border-radius:40px;
+    box-shadow:0 6px 0 #0e7c44, 0 0 20px rgba(61,220,132,.4);
+    cursor:pointer;
+    display:flex; align-items:center; gap:8px;
+    margin-top:8px;
+  }
+  .group-share-btn:active{transform:translateY(4px); box-shadow:0 2px 0 #0e7c44;}
+  .group-back-btn{
+    margin-top:12px; margin-bottom:20px;
+    background:transparent; border:2px solid rgba(255,255,255,.2);
+    color:var(--chalk); font-family:'Rubik',sans-serif; font-weight:800; font-size:14px;
+    padding:11px 30px; border-radius:40px; cursor:pointer;
+  }
+
   /* ---------- GAME SCREEN ---------- */
   #gameScreen{padding:0; justify-content:flex-start;}
   .hud{
@@ -800,6 +870,26 @@
       <div class="legend-item"><div class="legend-ball" id="legendDiamond"></div>50+<span class="legend-tag">ללא זמן</span></div>
       <div class="legend-item"><div class="legend-ball" id="legendMonster"></div>100+<span class="legend-tag">ללא זמן</span></div>
     </div>
+    <button class="group-btn" id="openGroupBtn">🏆 קבוצת חברים</button>
+  </div>
+
+  <!-- GROUP / LEADERBOARD SCREEN -->
+  <div id="groupScreen" class="screen">
+    <div class="group-title">קבוצת החברים שלי</div>
+    <div class="group-sub">הטבלה מתעדכנת כשאתם משתפים קישורים אחד לשני בוואטסאפ — כל שיתוף מוסיף את השיאים העדכניים לטבלה שלך.</div>
+
+    <div class="lb-section">
+      <div class="lb-section-title">🕐 משחק רגיל</div>
+      <div class="lb-table" id="lbTimed"></div>
+    </div>
+
+    <div class="lb-section">
+      <div class="lb-section-title">♾️ ללא זמן</div>
+      <div class="lb-table" id="lbEndless"></div>
+    </div>
+
+    <button class="group-share-btn" id="shareGroupBtn">📱 שתף בוואטסאפ</button>
+    <button class="group-back-btn" id="groupBackBtn">חזרה</button>
   </div>
 
   <!-- GAME SCREEN -->
@@ -901,6 +991,7 @@
   const startScreen = document.getElementById('startScreen');
   const gameScreen = document.getElementById('gameScreen');
   const endScreen = document.getElementById('endScreen');
+  const groupScreen = document.getElementById('groupScreen');
   const playBtn = document.getElementById('playBtn');
   const againBtn = document.getElementById('againBtn');
   const homeBtn = document.getElementById('homeBtn');
@@ -1086,8 +1177,126 @@
   document.getElementById('legendDiamond').innerHTML = trophySVG('diamond','lg-diamond');
   document.getElementById('legendMonster').innerHTML = trophySVG('monster','lg-monster');
 
+  // ---------- FRIENDS GROUP LEADERBOARD ----------
+  function crownSVG(rank){
+    const palettes = {
+      1: {light:'#fff3c4', mid:'#f2c14e', dark:'#a97917'},
+      2: {light:'#ffffff', mid:'#c9d2db', dark:'#6c7681'},
+      3: {light:'#f0b98a', mid:'#c17a44', dark:'#713e1c'}
+    };
+    const p = palettes[rank];
+    if(!p) return '';
+    const uid = 'crown'+rank+'-'+Math.random().toString(36).slice(2,7);
+    return `<svg viewBox="0 0 100 80" class="lb-crown">
+      <defs>
+        <linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${p.light}"/>
+          <stop offset="60%" stop-color="${p.mid}"/>
+          <stop offset="100%" stop-color="${p.dark}"/>
+        </linearGradient>
+      </defs>
+      <path d="M8,70 L8,38 L28,54 L50,22 L72,54 L92,38 L92,70 Z" fill="url(#${uid})" stroke="${p.dark}" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="8" cy="34" r="7" fill="url(#${uid})" stroke="${p.dark}" stroke-width="2"/>
+      <circle cx="50" cy="18" r="7" fill="url(#${uid})" stroke="${p.dark}" stroke-width="2"/>
+      <circle cx="92" cy="34" r="7" fill="url(#${uid})" stroke="${p.dark}" stroke-width="2"/>
+      <rect x="8" y="70" width="84" height="8" rx="2" fill="url(#${uid})" stroke="${p.dark}" stroke-width="2"/>
+    </svg>`;
+  }
+
+  const GROUP_KEY = 'daniel-nba-group';
+  function loadGroup(){
+    try{
+      const raw = localStorage.getItem(GROUP_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveGroup(g){
+    try{ localStorage.setItem(GROUP_KEY, JSON.stringify(g)); }catch(e){}
+  }
+  function mergeGroupData(incoming){
+    if(!incoming || typeof incoming !== 'object') return;
+    const g = loadGroup();
+    Object.keys(incoming).forEach(name=>{
+      const entry = incoming[name] || {};
+      if(!g[name]) g[name] = { timed:0, endless:0 };
+      const t = parseInt(entry.timed,10) || 0;
+      const e = parseInt(entry.endless,10) || 0;
+      if(t > g[name].timed) g[name].timed = t;
+      if(e > g[name].endless) g[name].endless = e;
+    });
+    saveGroup(g);
+  }
+  function updateMyGroupEntry(mode, s){
+    const g = loadGroup();
+    const name = playerName || 'דניאל';
+    if(!g[name]) g[name] = { timed:0, endless:0 };
+    if(s > g[name][mode]) g[name][mode] = s;
+    saveGroup(g);
+  }
+
+  function b64EncodeUnicode(str){
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+  function b64DecodeUnicode(str){
+    return decodeURIComponent(escape(atob(str)));
+  }
+
+  function checkIncomingGroupLink(){
+    try{
+      const hash = window.location.hash || '';
+      const m = hash.match(/g=([^&]+)/);
+      if(m && m[1]){
+        const data = JSON.parse(b64DecodeUnicode(decodeURIComponent(m[1])));
+        mergeGroupData(data);
+        if(window.history && window.history.replaceState){
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      }
+    }catch(e){}
+  }
+  checkIncomingGroupLink();
+
+  function renderLbSection(container, mode){
+    const g = loadGroup();
+    const rows = Object.keys(g)
+      .map(name => ({ name, score: g[name][mode] || 0 }))
+      .filter(r => r.score > 0)
+      .sort((a,b) => b.score - a.score);
+
+    if(rows.length === 0){
+      container.innerHTML = `<div class="lb-empty">אין עדיין תוצאות בקטגוריה הזו. שחקו ושתפו כדי למלא את הטבלה!</div>`;
+      return;
+    }
+
+    container.innerHTML = rows.map((r, i)=>{
+      const rank = i+1;
+      const isMe = r.name === playerName;
+      return `
+      <div class="lb-row ${isMe ? 'me' : ''}">
+        <div class="lb-rank">${rank<=3 ? '' : '#'+rank}</div>
+        ${rank<=3 ? crownSVG(rank) : ''}
+        <div class="lb-name">${r.name}${isMe ? ' (אני)' : ''}</div>
+        <div class="lb-score">${r.score}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderGroupScreen(){
+    renderLbSection(document.getElementById('lbTimed'), 'timed');
+    renderLbSection(document.getElementById('lbEndless'), 'endless');
+  }
+
+  function shareGroupWhatsApp(){
+    const g = loadGroup();
+    const encoded = encodeURIComponent(b64EncodeUnicode(JSON.stringify(g)));
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = baseUrl + '#g=' + encoded;
+    const text = `בואו נתחרה במשחק "דניאל לNBA"! 🏀🏆 הצטרפו לקבוצת החברים שלי וראו מי מוביל בטבלה:\n${shareUrl}`;
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  }
+
   function showScreen(el){
-    [startScreen, gameScreen, endScreen].forEach(s => s.classList.remove('active'));
+    [startScreen, gameScreen, endScreen, groupScreen].forEach(s => s.classList.remove('active'));
     el.classList.add('active');
   }
 
@@ -1177,6 +1386,13 @@
   endlessModeBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); startGame('endless'); });
   againBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); startGame(gameMode); });
   homeBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); refreshHighScoreDisplay(); showScreen(startScreen); });
+
+  const openGroupBtn = document.getElementById('openGroupBtn');
+  const groupBackBtn = document.getElementById('groupBackBtn');
+  const shareGroupBtn = document.getElementById('shareGroupBtn');
+  openGroupBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); renderGroupScreen(); showScreen(groupScreen); });
+  groupBackBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); showScreen(startScreen); });
+  shareGroupBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); shareGroupWhatsApp(); });
 
   function startGame(mode){
     gameMode = mode || 'timed';
@@ -1330,6 +1546,7 @@
     const prevHigh = getHighScore(gameMode);
     const isNewHigh = score > prevHigh && score > 0;
     if(isNewHigh) setHighScore(gameMode, score);
+    updateMyGroupEntry(gameMode, score);
     refreshHighScoreDisplay();
     newHighBanner.classList.remove('show');
 
