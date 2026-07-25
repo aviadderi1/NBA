@@ -286,6 +286,61 @@
     padding:11px 30px; border-radius:40px; cursor:pointer;
   }
 
+  .no-group-panel, .in-group-panel{
+    display:none;
+    flex-direction:column; align-items:center;
+    width:100%; max-width:380px;
+  }
+  .no-group-panel.active, .in-group-panel.active{display:flex;}
+
+  .group-create-btn{
+    margin-top:16px;
+    background:linear-gradient(180deg,#ff8a4d,var(--rim-orange));
+    border:none; color:#2a1204;
+    font-family:'Rubik',sans-serif; font-weight:900; font-size:16px;
+    padding:14px 30px; border-radius:40px;
+    box-shadow:0 6px 0 var(--rim-orange-dark), 0 0 18px rgba(255,94,26,.4);
+    cursor:pointer;
+  }
+  .group-create-btn:active{transform:translateY(4px); box-shadow:0 2px 0 var(--rim-orange-dark);}
+
+  .join-row{display:flex; gap:8px; margin-top:18px; width:100%;}
+  .join-code-input{
+    flex:1; text-align:center; letter-spacing:.15em; text-transform:uppercase;
+    background:#0c0a18; border:2px solid rgba(46,230,255,.35); border-radius:14px;
+    padding:11px 10px; font-family:'Press Start 2P', monospace; font-size:13px;
+    color:var(--chalk); outline:none;
+  }
+  .join-code-input:focus{border-color:var(--neon-cyan);}
+  .join-btn{
+    background:transparent; border:2px solid var(--neon-cyan); color:var(--neon-cyan);
+    font-family:'Rubik',sans-serif; font-weight:800; font-size:14px;
+    padding:0 20px; border-radius:14px; cursor:pointer;
+  }
+
+  .group-code-badge{
+    display:flex; align-items:center; gap:8px;
+    background:#0c0a18; border:1px solid rgba(242,193,78,.35); border-radius:16px;
+    padding:8px 18px; margin-bottom:6px;
+  }
+  .group-code-label{font-family:'Heebo',sans-serif; font-weight:700; font-size:12px; color:#9aa3b4;}
+  .group-code-value{
+    font-family:'Press Start 2P', monospace; font-size:16px; letter-spacing:.1em;
+    color:var(--gold); text-shadow:0 0 8px rgba(242,193,78,.7);
+  }
+  .lb-status{font-size:11px; color:#6a7386; margin-bottom:14px;}
+
+  .group-refresh-btn{
+    background:transparent; border:2px solid rgba(255,255,255,.2);
+    color:var(--chalk); font-family:'Rubik',sans-serif; font-weight:700; font-size:13px;
+    padding:9px 24px; border-radius:40px; cursor:pointer; margin-top:8px;
+  }
+  .group-leave-btn{
+    background:transparent; border:none;
+    color:#ff5f5f; font-family:'Heebo',sans-serif; font-weight:700; font-size:12px;
+    padding:10px; cursor:pointer; margin-top:6px; text-decoration:underline;
+  }
+
   /* ---------- GAME SCREEN ---------- */
   #gameScreen{padding:0; justify-content:flex-start;}
   .hud{
@@ -876,19 +931,38 @@
   <!-- GROUP / LEADERBOARD SCREEN -->
   <div id="groupScreen" class="screen">
     <div class="group-title">קבוצת החברים שלי</div>
-    <div class="group-sub">הטבלה מתעדכנת כשאתם משתפים קישורים אחד לשני בוואטסאפ — כל שיתוף מוסיף את השיאים העדכניים לטבלה שלך.</div>
 
-    <div class="lb-section">
-      <div class="lb-section-title">🕐 משחק רגיל</div>
-      <div class="lb-table" id="lbTimed"></div>
+    <div id="noGroupPanel" class="no-group-panel">
+      <div class="group-sub">עדיין לא הצטרפת לקבוצה. צור קבוצה חדשה ושתף את הקוד עם חברים, או הצטרף עם קוד שקיבלת.</div>
+      <button class="group-create-btn" id="createGroupBtn">➕ צור קבוצה חדשה</button>
+      <div class="join-row">
+        <input type="text" id="joinCodeInput" class="join-code-input" placeholder="קוד קבוצה" maxlength="6" autocomplete="off">
+        <button class="join-btn" id="joinGroupBtn">הצטרף</button>
+      </div>
     </div>
 
-    <div class="lb-section">
-      <div class="lb-section-title">♾️ ללא זמן</div>
-      <div class="lb-table" id="lbEndless"></div>
+    <div id="inGroupPanel" class="in-group-panel">
+      <div class="group-code-badge">
+        <span class="group-code-label">קוד הקבוצה:</span>
+        <span class="group-code-value" id="groupCodeValue">------</span>
+      </div>
+      <div class="lb-status" id="lbStatus">טוען...</div>
+
+      <div class="lb-section">
+        <div class="lb-section-title">🕐 משחק רגיל</div>
+        <div class="lb-table" id="lbTimed"></div>
+      </div>
+
+      <div class="lb-section">
+        <div class="lb-section-title">♾️ ללא זמן</div>
+        <div class="lb-table" id="lbEndless"></div>
+      </div>
+
+      <button class="group-share-btn" id="shareGroupBtn">📱 שתף בוואטסאפ</button>
+      <button class="group-refresh-btn" id="refreshGroupBtn">🔄 רענן</button>
+      <button class="group-leave-btn" id="leaveGroupBtn">עזוב קבוצה</button>
     </div>
 
-    <button class="group-share-btn" id="shareGroupBtn">📱 שתף בוואטסאפ</button>
     <button class="group-back-btn" id="groupBackBtn">חזרה</button>
   </div>
 
@@ -1203,68 +1277,103 @@
     </svg>`;
   }
 
-  const GROUP_KEY = 'daniel-nba-group';
-  function loadGroup(){
-    try{
-      const raw = localStorage.getItem(GROUP_KEY);
-      return raw ? JSON.parse(raw) : {};
-    }catch(e){ return {}; }
+  // ============================================================
+  // ONLINE GROUP LEADERBOARD (Firebase Realtime Database)
+  //
+  // SETUP REQUIRED: create a free Firebase project at
+  // https://console.firebase.google.com → Build → Realtime Database →
+  // Create Database → start in test mode, then paste your database URL
+  // below (looks like https://your-project-default-rtdb.firebaseio.com).
+  // Without this, group scores stay local to this device only.
+  // ============================================================
+  const FIREBASE_DB_URL = ''; // <-- paste your Firebase Realtime Database URL here
+
+  const GROUP_ID_KEY = 'daniel-nba-groupid';
+  const GROUP_CACHE_KEY = 'daniel-nba-group-cache';
+  let myGroupId = null;
+  let groupPollInterval = null;
+
+  function isOnlineConfigured(){
+    return !!FIREBASE_DB_URL;
   }
-  function saveGroup(g){
-    try{ localStorage.setItem(GROUP_KEY, JSON.stringify(g)); }catch(e){}
+  function dbUrl(path){
+    return FIREBASE_DB_URL.replace(/\/$/,'') + '/' + path + '.json';
   }
-  function mergeGroupData(incoming){
-    if(!incoming || typeof incoming !== 'object') return;
-    const g = loadGroup();
-    Object.keys(incoming).forEach(name=>{
-      const entry = incoming[name] || {};
-      if(!g[name]) g[name] = { timed:0, endless:0 };
-      const t = parseInt(entry.timed,10) || 0;
-      const e = parseInt(entry.endless,10) || 0;
-      if(t > g[name].timed) g[name].timed = t;
-      if(e > g[name].endless) g[name].endless = e;
+  function loadMyGroupId(){
+    try{ return localStorage.getItem(GROUP_ID_KEY) || null; }catch(e){ return null; }
+  }
+  function saveMyGroupId(id){
+    try{ localStorage.setItem(GROUP_ID_KEY, id); }catch(e){}
+    myGroupId = id;
+  }
+  function clearMyGroupId(){
+    try{ localStorage.removeItem(GROUP_ID_KEY); }catch(e){}
+    myGroupId = null;
+  }
+  function loadGroupCache(){
+    try{ return JSON.parse(localStorage.getItem(GROUP_CACHE_KEY) || '{}'); }catch(e){ return {}; }
+  }
+  function saveGroupCache(players){
+    try{ localStorage.setItem(GROUP_CACHE_KEY, JSON.stringify(players || {})); }catch(e){}
+  }
+  function genGroupCode(){
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for(let i=0;i<6;i++) code += chars[Math.floor(Math.random()*chars.length)];
+    return code;
+  }
+
+  async function fbGet(path){
+    const res = await fetch(dbUrl(path), { cache:'no-store' });
+    if(!res.ok) throw new Error('fb get failed');
+    return res.json();
+  }
+  async function fbPut(path, data){
+    const res = await fetch(dbUrl(path), {
+      method:'PUT',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(data)
     });
-    saveGroup(g);
+    if(!res.ok) throw new Error('fb put failed');
+    return res.json();
   }
-  function updateMyGroupEntry(mode, s){
-    const g = loadGroup();
+
+  // Push (or update) my own best scores under my player-name node in this
+  // group. Each player only ever writes their own node, so there's no
+  // conflict between different people's devices writing at once.
+  async function pushMyScoreToGroup(){
+    if(!isOnlineConfigured() || !myGroupId) return;
     const name = playerName || 'דניאל';
-    if(!g[name]) g[name] = { timed:0, endless:0 };
-    if(s > g[name][mode]) g[name][mode] = s;
-    saveGroup(g);
-  }
-
-  function b64EncodeUnicode(str){
-    return btoa(unescape(encodeURIComponent(str)));
-  }
-  function b64DecodeUnicode(str){
-    return decodeURIComponent(escape(atob(str)));
-  }
-
-  function checkIncomingGroupLink(){
+    const mine = {
+      timed: getHighScore('timed'),
+      endless: getHighScore('endless')
+    };
     try{
-      const hash = window.location.hash || '';
-      const m = hash.match(/g=([^&]+)/);
-      if(m && m[1]){
-        const data = JSON.parse(b64DecodeUnicode(decodeURIComponent(m[1])));
-        mergeGroupData(data);
-        if(window.history && window.history.replaceState){
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        }
-      }
-    }catch(e){}
+      await fbPut(`groups/${myGroupId}/players/${encodeURIComponent(name)}`, mine);
+    }catch(e){ /* offline — will retry next time */ }
   }
-  checkIncomingGroupLink();
 
-  function renderLbSection(container, mode){
-    const g = loadGroup();
-    const rows = Object.keys(g)
-      .map(name => ({ name, score: g[name][mode] || 0 }))
+  async function fetchGroupPlayers(){
+    if(!myGroupId) return null;
+    if(!isOnlineConfigured()) return loadGroupCache();
+    try{
+      const players = await fbGet(`groups/${myGroupId}/players`);
+      const clean = players || {};
+      saveGroupCache(clean);
+      return clean;
+    }catch(e){
+      return loadGroupCache(); // offline fallback: show last known state
+    }
+  }
+
+  function renderLbSection(container, players, mode){
+    const rows = Object.keys(players || {})
+      .map(name => ({ name, score: (players[name] && players[name][mode]) || 0 }))
       .filter(r => r.score > 0)
       .sort((a,b) => b.score - a.score);
 
     if(rows.length === 0){
-      container.innerHTML = `<div class="lb-empty">אין עדיין תוצאות בקטגוריה הזו. שחקו ושתפו כדי למלא את הטבלה!</div>`;
+      container.innerHTML = `<div class="lb-empty">אין עדיין תוצאות בקטגוריה הזו. שחקו כדי להופיע כאן!</div>`;
       return;
     }
 
@@ -1281,17 +1390,86 @@
     }).join('');
   }
 
-  function renderGroupScreen(){
-    renderLbSection(document.getElementById('lbTimed'), 'timed');
-    renderLbSection(document.getElementById('lbEndless'), 'endless');
+  const lbStatusEl = () => document.getElementById('lbStatus');
+
+  async function refreshGroupLeaderboard(){
+    if(lbStatusEl()) lbStatusEl().textContent = isOnlineConfigured() ? 'מרענן...' : 'מצב מקומי בלבד (לא הוגדר חיבור אונליין)';
+    await pushMyScoreToGroup();
+    const players = await fetchGroupPlayers();
+    renderLbSection(document.getElementById('lbTimed'), players, 'timed');
+    renderLbSection(document.getElementById('lbEndless'), players, 'endless');
+    if(lbStatusEl()){
+      lbStatusEl().textContent = isOnlineConfigured()
+        ? 'מעודכן • ' + new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})
+        : 'מצב מקומי בלבד (לא הוגדר חיבור אונליין)';
+    }
   }
 
+  function renderGroupScreen(){
+    const noGroupPanel = document.getElementById('noGroupPanel');
+    const inGroupPanel = document.getElementById('inGroupPanel');
+    myGroupId = loadMyGroupId();
+    if(myGroupId){
+      noGroupPanel.classList.remove('active');
+      inGroupPanel.classList.add('active');
+      document.getElementById('groupCodeValue').textContent = myGroupId;
+      refreshGroupLeaderboard();
+      if(groupPollInterval) clearInterval(groupPollInterval);
+      groupPollInterval = setInterval(refreshGroupLeaderboard, 6000);
+    } else {
+      inGroupPanel.classList.remove('active');
+      noGroupPanel.classList.add('active');
+      if(groupPollInterval){ clearInterval(groupPollInterval); groupPollInterval = null; }
+    }
+  }
+
+  function stopGroupPolling(){
+    if(groupPollInterval){ clearInterval(groupPollInterval); groupPollInterval = null; }
+  }
+
+  async function createGroup(){
+    savePlayerNameFromInput();
+    const code = genGroupCode();
+    saveMyGroupId(code);
+    await pushMyScoreToGroup();
+    renderGroupScreen();
+  }
+
+  async function joinGroup(code){
+    savePlayerNameFromInput();
+    const clean = (code||'').trim().toUpperCase();
+    if(clean.length < 4) return;
+    saveMyGroupId(clean);
+    await pushMyScoreToGroup();
+    renderGroupScreen();
+  }
+
+  function leaveGroup(){
+    clearMyGroupId();
+    stopGroupPolling();
+    renderGroupScreen();
+  }
+
+  function checkIncomingGroupLink(){
+    try{
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('group');
+      if(code){
+        saveMyGroupId(code.trim().toUpperCase());
+        if(window.history && window.history.replaceState){
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      }
+    }catch(e){}
+  }
+  checkIncomingGroupLink();
+
   function shareGroupWhatsApp(){
-    const g = loadGroup();
-    const encoded = encodeURIComponent(b64EncodeUnicode(JSON.stringify(g)));
+    const code = loadMyGroupId();
+    if(!code) return;
     const baseUrl = window.location.origin + window.location.pathname;
-    const shareUrl = baseUrl + '#g=' + encoded;
-    const text = `בואו נתחרה במשחק "דניאל לNBA"! 🏀🏆 הצטרפו לקבוצת החברים שלי וראו מי מוביל בטבלה:\n${shareUrl}`;
+    const shareUrl = baseUrl + '?group=' + code;
+    const text = `בואו נתחרה במשחק "דניאל לNBA"! 🏀🏆 הצטרפו לקבוצת החברים שלי (קוד: ${code}) וראו מי מוביל בטבלה:\n${shareUrl}`;
 
     // Prefer the native share sheet (works great on iOS/Android and lets
     // the person pick WhatsApp, Messages, etc). Falls back to a direct
@@ -1399,9 +1577,19 @@
   const openGroupBtn = document.getElementById('openGroupBtn');
   const groupBackBtn = document.getElementById('groupBackBtn');
   const shareGroupBtn = document.getElementById('shareGroupBtn');
+  const createGroupBtn = document.getElementById('createGroupBtn');
+  const joinGroupBtn = document.getElementById('joinGroupBtn');
+  const joinCodeInput = document.getElementById('joinCodeInput');
+  const refreshGroupBtn = document.getElementById('refreshGroupBtn');
+  const leaveGroupBtn = document.getElementById('leaveGroupBtn');
+
   openGroupBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); renderGroupScreen(); showScreen(groupScreen); });
-  groupBackBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); showScreen(startScreen); });
+  groupBackBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); stopGroupPolling(); showScreen(startScreen); });
   shareGroupBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); shareGroupWhatsApp(); });
+  createGroupBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); createGroup(); });
+  joinGroupBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); joinGroup(joinCodeInput.value); });
+  refreshGroupBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); refreshGroupLeaderboard(); });
+  leaveGroupBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); leaveGroup(); });
 
   function startGame(mode){
     gameMode = mode || 'timed';
@@ -1555,7 +1743,7 @@
     const prevHigh = getHighScore(gameMode);
     const isNewHigh = score > prevHigh && score > 0;
     if(isNewHigh) setHighScore(gameMode, score);
-    updateMyGroupEntry(gameMode, score);
+    if(loadMyGroupId()) pushMyScoreToGroup();
     refreshHighScoreDisplay();
     newHighBanner.classList.remove('show');
 
