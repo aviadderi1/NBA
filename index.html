@@ -183,6 +183,38 @@
     font-size:11px; color:#9aa3b4; font-weight:600;
   }
   .legend-ball{width:38px;height:44px; display:flex; align-items:flex-end; justify-content:center;}
+  .legend-tag{
+    display:block; font-size:8px; color:var(--neon-cyan); letter-spacing:.02em;
+    text-shadow:0 0 4px rgba(46,230,255,.5);
+  }
+
+  .mode-select{
+    display:flex; gap:12px; margin-top:20px; width:100%; max-width:340px;
+  }
+  .mode-btn{
+    flex:1;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    background:#0c0a18;
+    border:2px solid rgba(255,255,255,.12);
+    border-radius:16px;
+    padding:12px 8px;
+    cursor:pointer;
+    color:var(--chalk);
+  }
+  .mode-btn-title{font-family:'Rubik',sans-serif; font-weight:900; font-size:14px;}
+  .mode-btn-sub{font-family:'Heebo',sans-serif; font-weight:600; font-size:10px; color:#9aa3b4;}
+  .mode-btn--regular{border-color:rgba(255,94,26,.4); box-shadow:0 0 12px rgba(255,94,26,.15);}
+  .mode-btn--regular .mode-btn-title{color:var(--rim-orange); text-shadow:0 0 6px rgba(255,94,26,.5);}
+  .mode-btn--endless{border-color:rgba(255,46,224,.4); box-shadow:0 0 12px rgba(255,46,224,.15);}
+  .mode-btn--endless .mode-btn-title{color:var(--neon-pink); text-shadow:0 0 6px rgba(255,46,224,.5);}
+  .mode-btn.selected{transform:scale(1.04); box-shadow:0 0 20px rgba(255,255,255,.25);}
+  .mode-btn:active{transform:scale(.96);}
+
+  .highscore-row{
+    display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; justify-content:center;
+  }
+  .highscore-row .highscore-badge{margin-top:0; font-size:9px; padding:6px 12px;}
+  .highscore-row .hs-label{font-size:9px;}
 
   /* ---------- GAME SCREEN ---------- */
   #gameScreen{padding:0; justify-content:flex-start;}
@@ -745,13 +777,28 @@
       <input type="text" id="playerNameInput" class="name-input" placeholder="דניאל" maxlength="14" autocomplete="off">
     </div>
     <button id="playBtn" class="play-btn"><span class="seam"></span>שחק</button>
+    <div class="mode-select">
+      <button class="mode-btn mode-btn--regular" id="regularModeBtn">
+        <span class="mode-btn-title">משחק רגיל</span>
+        <span class="mode-btn-sub">דקה וחצי על השעון</span>
+      </button>
+      <button class="mode-btn mode-btn--endless" id="endlessModeBtn">
+        <span class="mode-btn-title">ללא זמן</span>
+        <span class="mode-btn-sub">החטאה אחת = סוף</span>
+      </button>
+    </div>
     <div class="coin-prompt">לחץ להתחלה</div>
-    <div class="highscore-badge"><span class="hs-label">שיא:</span><span id="highScoreValue">0</span></div>
+    <div class="highscore-row">
+      <div class="highscore-badge"><span class="hs-label">שיא רגיל:</span><span id="highScoreValue">0</span></div>
+      <div class="highscore-badge"><span class="hs-label">שיא ללא זמן:</span><span id="highScoreValueEndless">0</span></div>
+    </div>
     <div class="legend">
       <div class="legend-item"><div class="legend-ball" id="legendGold"></div>30+</div>
       <div class="legend-item"><div class="legend-ball" id="legendSilver"></div>20-29</div>
       <div class="legend-item"><div class="legend-ball" id="legendBronze"></div>10-19</div>
       <div class="legend-item"><div class="legend-ball" id="legendNone"></div>&lt;10</div>
+      <div class="legend-item"><div class="legend-ball" id="legendDiamond"></div>50+<span class="legend-tag">ללא זמן</span></div>
+      <div class="legend-item"><div class="legend-ball" id="legendMonster"></div>100+<span class="legend-tag">ללא זמן</span></div>
     </div>
   </div>
 
@@ -835,9 +882,9 @@
 
   <!-- END SCREEN -->
   <div id="endScreen" class="screen">
-    <div class="end-title">הזמן נגמר</div>
+    <div class="end-title" id="endTitle">הזמן נגמר</div>
     <div class="final-score" id="finalScore">0</div>
-    <div class="final-label">קליעות בדקה וחצי</div>
+    <div class="final-label" id="finalLabel">קליעות בדקה וחצי</div>
     <div class="highscore-badge" id="endHighScoreBadge"><span class="hs-label">שיא:</span><span id="endHighScoreValue">0</span></div>
     <div class="newhigh-banner" id="newHighBanner">שיא חדש!<br>★★★</div>
     <div class="medal-wrap" id="medalWrap"></div>
@@ -860,6 +907,8 @@
   const timerEl = document.getElementById('timer');
   const scoreEl = document.getElementById('score');
   const finalScoreEl = document.getElementById('finalScore');
+  const endTitleEl = document.getElementById('endTitle');
+  const finalLabelEl = document.getElementById('finalLabel');
   const medalWrap = document.getElementById('medalWrap');
   const countdownOverlay = document.getElementById('countdownOverlay');
   const countdownNum = document.getElementById('countdownNum');
@@ -888,6 +937,7 @@
   let gameTimerInterval = null;
   let phase = 'idle'; // 'horizontal' | 'power' | 'animating'
   let paused = false;
+  let gameMode = 'timed'; // 'timed' | 'endless'
   let hRAF = null, pRAF = null;
   let hPos = 50, pPos = 0;
   let hDir = 1, pDir = 1;
@@ -896,20 +946,25 @@
   const comboEl = document.getElementById('combo');
   const marquee = document.getElementById('marquee');
   const highScoreValueEl = document.getElementById('highScoreValue');
+  const highScoreValueEndlessEl = document.getElementById('highScoreValueEndless');
   const endHighScoreValueEl = document.getElementById('endHighScoreValue');
+  const regularModeBtn = document.getElementById('regularModeBtn');
+  const endlessModeBtn = document.getElementById('endlessModeBtn');
   const newHighBanner = document.getElementById('newHighBanner');
 
-  const HS_KEY = 'daniel-nba-highscore';
-  function getHighScore(){
-    try{ return parseInt(localStorage.getItem(HS_KEY) || '0', 10) || 0; }catch(e){ return 0; }
+  const HS_KEYS = { timed:'daniel-nba-highscore', endless:'daniel-nba-highscore-endless' };
+  function getHighScore(mode){
+    const key = HS_KEYS[mode] || HS_KEYS.timed;
+    try{ return parseInt(localStorage.getItem(key) || '0', 10) || 0; }catch(e){ return 0; }
   }
-  function setHighScore(v){
-    try{ localStorage.setItem(HS_KEY, String(v)); }catch(e){}
+  function setHighScore(mode, v){
+    const key = HS_KEYS[mode] || HS_KEYS.timed;
+    try{ localStorage.setItem(key, String(v)); }catch(e){}
   }
   function refreshHighScoreDisplay(){
-    const hs = getHighScore();
-    if(highScoreValueEl) highScoreValueEl.textContent = hs;
-    if(endHighScoreValueEl) endHighScoreValueEl.textContent = hs;
+    if(highScoreValueEl) highScoreValueEl.textContent = getHighScore('timed');
+    if(highScoreValueEndlessEl) highScoreValueEndlessEl.textContent = getHighScore('endless');
+    if(endHighScoreValueEl) endHighScoreValueEl.textContent = getHighScore(gameMode);
   }
   refreshHighScoreDisplay();
 
@@ -935,18 +990,43 @@
 
   function trophySVG(tier, uid){
     const palettes = {
-      gold:   {light:'#fff3c4', mid:'#f2c14e', dark:'#a97917', glow:'rgba(242,193,78,.6)'},
-      silver: {light:'#ffffff', mid:'#c9d2db', dark:'#6c7681', glow:'rgba(201,210,219,.5)'},
-      bronze: {light:'#f0b98a', mid:'#c17a44', dark:'#713e1c', glow:'rgba(193,122,68,.5)'},
-      none:   {light:'#3a4258', mid:'#2a3040', dark:'#1c2130', glow:'rgba(0,0,0,0)'}
+      gold:    {light:'#fff3c4', mid:'#f2c14e', dark:'#a97917', glow:'rgba(242,193,78,.6)'},
+      silver:  {light:'#ffffff', mid:'#c9d2db', dark:'#6c7681', glow:'rgba(201,210,219,.5)'},
+      bronze:  {light:'#f0b98a', mid:'#c17a44', dark:'#713e1c', glow:'rgba(193,122,68,.5)'},
+      diamond: {light:'#eaffff', mid:'#4fd8ff', dark:'#0e6f96', glow:'rgba(46,230,255,.8)'},
+      monster: {light:'#ffd27a', mid:'#ff3b3b', dark:'#7a0d0d', glow:'rgba(255,43,43,.8)'},
+      none:    {light:'#3a4258', mid:'#2a3040', dark:'#1c2130', glow:'rgba(0,0,0,0)'}
     };
     const p = palettes[tier];
     const dashed = tier === 'none';
+    const isDiamond = tier === 'diamond';
+    const isMonster = tier === 'monster';
     const metalFill = dashed ? 'none' : `url(#metal-${uid})`;
     const metalStroke = dashed ? '#4a5468' : p.dark;
     const dashAttr = dashed ? 'stroke-dasharray="4 3"' : '';
+    const viewBox = isMonster ? '-26 -8 152 152' : (isDiamond ? '-14 -10 128 148' : '0 -2 100 140');
+
+    const flames = isMonster ? `
+      <path d="M8,44 C-6,38 -8,20 2,8 C0,20 8,24 10,16 C14,26 12,36 20,40 C14,42 10,44 8,44 Z"
+            fill="url(#flame-${uid})" opacity="0.95"/>
+      <path d="M92,44 C106,38 108,20 98,8 C100,20 92,24 90,16 C86,26 88,36 80,40 C86,42 90,44 92,44 Z"
+            fill="url(#flame-${uid})" opacity="0.95"/>
+      <path d="M12,54 C2,50 -2,38 4,30 C4,38 10,40 12,34 C16,40 14,48 20,50 C16,52 14,54 12,54 Z"
+            fill="url(#flame2-${uid})" opacity="0.9"/>
+      <path d="M88,54 C98,50 102,38 96,30 C96,38 90,40 88,34 C84,40 86,48 80,50 C84,52 86,54 88,54 Z"
+            fill="url(#flame2-${uid})" opacity="0.9"/>
+    ` : '';
+
+    const sparkles = isDiamond ? `
+      <g fill="#eaffff" opacity="0.95">
+        <path d="M6,30 L8,36 L14,38 L8,40 L6,46 L4,40 L-2,38 L4,36 Z"/>
+        <path d="M94,50 L95.5,54 L100,55.5 L95.5,57 L94,61 L92.5,57 L88,55.5 L92.5,54 Z"/>
+        <path d="M12,70 L13.5,74 L18,75.5 L13.5,77 L12,81 L10.5,77 L6,75.5 L10.5,74 Z"/>
+      </g>
+    ` : '';
+
     return `
-    <svg viewBox="0 -2 100 140" class="trophy-svg" style="filter:drop-shadow(0 10px 16px ${p.glow})">
+    <svg viewBox="${viewBox}" class="trophy-svg" style="filter:drop-shadow(0 10px 16px ${p.glow})">
       <defs>
         <linearGradient id="metal-${uid}" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stop-color="${p.light}"/>
@@ -957,7 +1037,20 @@
           <stop offset="0%" stop-color="${p.mid}"/>
           <stop offset="100%" stop-color="${p.dark}"/>
         </linearGradient>
+        ${isMonster ? `
+        <linearGradient id="flame-${uid}" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#ff3b3b"/>
+          <stop offset="55%" stop-color="#ff8a1a"/>
+          <stop offset="100%" stop-color="#ffe066"/>
+        </linearGradient>
+        <linearGradient id="flame2-${uid}" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#c91a1a"/>
+          <stop offset="60%" stop-color="#ff5a1a"/>
+          <stop offset="100%" stop-color="#ffcf5c"/>
+        </linearGradient>` : ''}
       </defs>
+
+      ${flames}
 
       <!-- base -->
       <rect x="18" y="128" width="64" height="9" rx="3" fill="${dashed?'none':`url(#metal-v-${uid})`}" stroke="${metalStroke}" ${dashAttr} stroke-width="1.4"/>
@@ -976,8 +1069,13 @@
 
       ${!dashed ? `<path d="M25,16 Q20,36 32,54" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="3.5" stroke-linecap="round"/>` : ``}
 
-      ${!dashed ? `<path d="M50,19 L52.9,26.8 L61,27.3 L54.6,32.5 L56.9,40.5 L50,35.8 L43.1,40.5 L45.4,32.5 L39,27.3 L47.1,26.8 Z"
-            fill="${p.light}" stroke="${p.dark}" stroke-width="1"/>` : `<circle cx="50" cy="30" r="9" fill="none" stroke="#4a5468" stroke-width="1.5" stroke-dasharray="3 2"/>`}
+      ${!dashed && !isDiamond ? `<path d="M50,19 L52.9,26.8 L61,27.3 L54.6,32.5 L56.9,40.5 L50,35.8 L43.1,40.5 L45.4,32.5 L39,27.3 L47.1,26.8 Z"
+            fill="${p.light}" stroke="${p.dark}" stroke-width="1"/>` : ``}
+      ${isDiamond ? `<path d="M50,16 L60,24 L50,42 L40,24 Z M40,24 L60,24 M50,16 L46,24 M50,16 L54,24 M50,42 L46,24 M50,42 L54,24"
+            fill="#eaffff" stroke="#0e6f96" stroke-width="0.8" opacity="0.95"/>` : ``}
+      ${dashed ? `<circle cx="50" cy="30" r="9" fill="none" stroke="#4a5468" stroke-width="1.5" stroke-dasharray="3 2"/>` : ``}
+
+      ${sparkles}
     </svg>`;
   }
 
@@ -985,6 +1083,8 @@
   document.getElementById('legendSilver').innerHTML = trophySVG('silver','lg-silver');
   document.getElementById('legendBronze').innerHTML = trophySVG('bronze','lg-bronze');
   document.getElementById('legendNone').innerHTML = trophySVG('none','lg-none');
+  document.getElementById('legendDiamond').innerHTML = trophySVG('diamond','lg-diamond');
+  document.getElementById('legendMonster').innerHTML = trophySVG('monster','lg-monster');
 
   function showScreen(el){
     [startScreen, gameScreen, endScreen].forEach(s => s.classList.remove('active'));
@@ -1072,11 +1172,14 @@
     }
   }
 
-  playBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); startGame(); });
-  againBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); startGame(); });
+  playBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); startGame('timed'); });
+  regularModeBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); startGame('timed'); });
+  endlessModeBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); startGame('endless'); });
+  againBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); startGame(gameMode); });
   homeBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); refreshHighScoreDisplay(); showScreen(startScreen); });
 
-  function startGame(){
+  function startGame(mode){
+    gameMode = mode || 'timed';
     savePlayerNameFromInput();
     score = 0;
     combo = 0;
@@ -1084,8 +1187,12 @@
     paused = false;
     pauseOverlay.classList.remove('active');
     scoreEl.textContent = '0';
-    timerEl.textContent = '90';
     timerEl.classList.remove('low');
+    if(gameMode === 'endless'){
+      timerEl.textContent = '∞';
+    } else {
+      timerEl.textContent = '90';
+    }
     ball.style.transition = 'none';
     ball.style.transform = 'translate(-50%,0) scale(1) rotate(0deg)';
     ball.style.opacity = '1';
@@ -1133,7 +1240,9 @@
   }
 
   function beginMatch(){
-    gameTimerInterval = setInterval(timerTick, 1000);
+    if(gameMode === 'timed'){
+      gameTimerInterval = setInterval(timerTick, 1000);
+    }
     startHorizontalPhase();
   }
 
@@ -1154,7 +1263,9 @@
     paused = false;
     pauseOverlay.classList.remove('active');
     document.getAnimations().forEach(a=>{ try{ if(a.playState==='paused') a.play(); }catch(e){} });
-    gameTimerInterval = setInterval(timerTick, 1000);
+    if(gameMode === 'timed'){
+      gameTimerInterval = setInterval(timerTick, 1000);
+    }
     if(phase === 'horizontal') hRAF = requestAnimationFrame(hFrameStep);
     else if(phase === 'power') pRAF = requestAnimationFrame(pFrameStep);
     sfxClick();
@@ -1192,11 +1303,23 @@
     pauseOverlay.classList.remove('active');
     finalScoreEl.textContent = score;
 
+    if(endTitleEl) endTitleEl.textContent = gameMode === 'endless' ? 'המשחק נגמר!' : 'הזמן נגמר';
+    if(finalLabelEl) finalLabelEl.textContent = gameMode === 'endless' ? 'קליעות ברצף עד ההחטאה' : 'קליעות בדקה וחצי';
+
     let medalClass, medalText, medalSub;
-    if(score >= 30){ medalClass='gold'; medalText='גביע זהב'; medalSub='ביצוע אגדי!'; }
-    else if(score >= 20){ medalClass='silver'; medalText='גביע כסף'; medalSub='יריה מעולה'; }
-    else if(score >= 10){ medalClass='bronze'; medalText='גביע ארד'; medalSub='התחלה טובה'; }
-    else { medalClass='none'; medalText='בלי גביע הפעם'; medalSub='נסה שוב ותשתפר'; }
+    if(gameMode === 'endless' && score >= 100){
+      medalClass='monster'; medalText='גביע המסטאר'; medalSub='מפלצת אמיתית! 🔥';
+    } else if(gameMode === 'endless' && score >= 50){
+      medalClass='diamond'; medalText='גביע יהלום'; medalSub='נוצץ ובלתי נתפס! 💎';
+    } else if(score >= 30){
+      medalClass='gold'; medalText='גביע זהב'; medalSub='ביצוע אגדי!';
+    } else if(score >= 20){
+      medalClass='silver'; medalText='גביע כסף'; medalSub='יריה מעולה';
+    } else if(score >= 10){
+      medalClass='bronze'; medalText='גביע ארד'; medalSub='התחלה טובה';
+    } else {
+      medalClass='none'; medalText='בלי גביע הפעם'; medalSub='נסה שוב ותשתפר';
+    }
 
     medalWrap.innerHTML = `
       <div class="medal-ball">${trophySVG(medalClass, 'end-'+Date.now())}</div>
@@ -1204,9 +1327,9 @@
       <div class="medal-sub">${medalSub}</div>
     `;
 
-    const prevHigh = getHighScore();
+    const prevHigh = getHighScore(gameMode);
     const isNewHigh = score > prevHigh && score > 0;
-    if(isNewHigh) setHighScore(score);
+    if(isNewHigh) setHighScore(gameMode, score);
     refreshHighScoreDisplay();
     newHighBanner.classList.remove('show');
 
@@ -1315,6 +1438,16 @@
     }, delay);
   }
 
+  function afterMiss(){
+    // In endless mode a single miss ends the run, but only after the
+    // popup image + caption have had their full 3s on screen.
+    if(gameMode === 'endless'){
+      setTimeout(()=>{ endGame(); }, 3000);
+    } else {
+      nextShotSoon(500);
+    }
+  }
+
   const madeShotComplimentTemplates = [
     'סל! {NAME} תותח! 🏀',
     '{NAME} לNBA! 🔥',
@@ -1412,7 +1545,7 @@
       showMissPopup();
       sfxMiss();
       resetBall(); ball.style.opacity='0'; ballShadow.style.opacity='0';
-      nextShotSoon(500);
+      afterMiss();
     };
   }
 
@@ -1431,7 +1564,7 @@
       sfxMiss();
       shakeScreen();
       resetBall(); ball.style.opacity='0'; ballShadow.style.opacity='0';
-      nextShotSoon(500);
+      afterMiss();
     };
   }
 
@@ -1448,7 +1581,7 @@
       showMissPopup();
       sfxMiss();
       resetBall(); ball.style.opacity='0'; ballShadow.style.opacity='0';
-      nextShotSoon(450);
+      afterMiss();
     };
   }
 
