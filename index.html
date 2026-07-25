@@ -924,6 +924,7 @@
       <div class="legend-item"><div class="legend-ball" id="legendNone"></div>&lt;10</div>
       <div class="legend-item"><div class="legend-ball" id="legendDiamond"></div>50+<span class="legend-tag">ללא זמן</span></div>
       <div class="legend-item"><div class="legend-ball" id="legendMonster"></div>100+<span class="legend-tag">ללא זמן</span></div>
+      <div class="legend-item"><div class="legend-ball" id="legendUltra"></div>200+<span class="legend-tag">ללא זמן</span></div>
     </div>
     <button class="group-btn" id="openGroupBtn">🏆 קבוצת חברים</button>
   </div>
@@ -1160,9 +1161,55 @@
       bronze:  {light:'#f0b98a', mid:'#c17a44', dark:'#713e1c', glow:'rgba(193,122,68,.5)'},
       diamond: {light:'#eaffff', mid:'#4fd8ff', dark:'#0e6f96', glow:'rgba(46,230,255,.8)'},
       monster: {light:'#ffd27a', mid:'#ff3b3b', dark:'#7a0d0d', glow:'rgba(255,43,43,.8)'},
+      ultra:   {light:'#f3d9ff', mid:'#a855f7', dark:'#4c1d7a', glow:'rgba(168,85,247,.9)'},
       none:    {light:'#3a4258', mid:'#2a3040', dark:'#1c2130', glow:'rgba(0,0,0,0)'}
     };
     const p = palettes[tier];
+
+    // MONSTER (ultra tier, 200+ endless): the entire trophy IS one giant
+    // purple flame — no cup, no handles, just fire.
+    if(tier === 'ultra'){
+      return `
+      <svg viewBox="-20 -14 140 158" class="trophy-svg" style="filter:drop-shadow(0 12px 20px ${p.glow})">
+        <defs>
+          <linearGradient id="uflame-${uid}" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="${p.dark}"/>
+            <stop offset="45%" stop-color="${p.mid}"/>
+            <stop offset="80%" stop-color="#e0aaff"/>
+            <stop offset="100%" stop-color="${p.light}"/>
+          </linearGradient>
+          <linearGradient id="ucore-${uid}" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="#7c1fd6"/>
+            <stop offset="55%" stop-color="#d68cff"/>
+            <stop offset="100%" stop-color="#fdf2ff"/>
+          </linearGradient>
+        </defs>
+
+        <ellipse cx="50" cy="136" rx="34" ry="7" fill="${p.dark}" opacity="0.55"/>
+
+        <!-- outer flame body -->
+        <path d="M50,-12
+                 C18,22 2,58 14,88
+                 C20,104 34,116 50,120
+                 C66,116 80,104 86,88
+                 C98,58 82,22 50,-12 Z"
+              fill="url(#uflame-${uid})" stroke="${p.dark}" stroke-width="2" stroke-linejoin="round"/>
+
+        <!-- side lick -->
+        <path d="M22,70 C10,60 8,42 20,26 C14,44 22,54 30,50 C24,60 24,68 22,70 Z"
+              fill="url(#uflame-${uid})" opacity="0.9"/>
+        <path d="M78,70 C90,60 92,42 80,26 C86,44 78,54 70,50 C76,60 76,68 78,70 Z"
+              fill="url(#uflame-${uid})" opacity="0.9"/>
+
+        <!-- inner glowing core -->
+        <path d="M50,20 C34,42 28,62 36,80 C40,90 45,96 50,98 C55,96 60,90 64,80 C72,62 66,42 50,20 Z"
+              fill="url(#ucore-${uid})" opacity="0.95"/>
+
+        <!-- tiny base ember -->
+        <rect x="36" y="118" width="28" height="8" rx="3" fill="${p.dark}" stroke="${p.mid}" stroke-width="1"/>
+      </svg>`;
+    }
+
     const dashed = tier === 'none';
     const isDiamond = tier === 'diamond';
     const isMonster = tier === 'monster';
@@ -1250,6 +1297,7 @@
   document.getElementById('legendNone').innerHTML = trophySVG('none','lg-none');
   document.getElementById('legendDiamond').innerHTML = trophySVG('diamond','lg-diamond');
   document.getElementById('legendMonster').innerHTML = trophySVG('monster','lg-monster');
+  document.getElementById('legendUltra').innerHTML = trophySVG('ultra','lg-ultra');
 
   // ---------- FRIENDS GROUP LEADERBOARD ----------
   function crownSVG(rank){
@@ -1720,7 +1768,9 @@
     if(finalLabelEl) finalLabelEl.textContent = gameMode === 'endless' ? 'קליעות ברצף עד ההחטאה' : 'קליעות בדקה וחצי';
 
     let medalClass, medalText, medalSub;
-    if(gameMode === 'endless' && score >= 100){
+    if(gameMode === 'endless' && score >= 200){
+      medalClass='ultra'; medalText='גביע MONSTER'; medalSub='להבה בלתי ניתנת לתפיסה! 🟣🔥';
+    } else if(gameMode === 'endless' && score >= 100){
       medalClass='monster'; medalText='גביע המסטאר'; medalSub='מפלצת אמיתית! 🔥';
     } else if(gameMode === 'endless' && score >= 50){
       medalClass='diamond'; medalText='גביע יהלום'; medalSub='נוצץ ובלתי נתפס! 💎';
