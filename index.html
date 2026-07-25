@@ -435,7 +435,7 @@
     left:0%;
   }
 
-  .v-bar-wrap{display:flex; align-items:center; gap:16px;}
+  .v-bar-wrap{display:flex; flex-direction:row-reverse; align-items:center; gap:16px;}
   .v-bar{
     position:relative; width:26px; height:220px;
     background:linear-gradient(180deg,#120f22,#1c1834,#120f22);
@@ -578,6 +578,21 @@
   }
   .again-btn:active{transform:translateY(5px); box-shadow:0 2px 0 var(--rim-orange-dark);}
 
+  .end-buttons{
+    display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:14px;
+  }
+  .home-btn{
+    background:transparent;
+    border:2px solid var(--neon-cyan);
+    color:var(--neon-cyan);
+    font-family:'Rubik',sans-serif; font-weight:900; font-size:16px;
+    padding:14px 30px; border-radius:44px;
+    box-shadow:0 0 16px rgba(46,230,255,.25);
+    cursor:pointer;
+    text-shadow:0 0 6px rgba(46,230,255,.5);
+  }
+  .home-btn:active{transform:translateY(4px); box-shadow:0 0 8px rgba(46,230,255,.2);}
+
   /* ---------- RESPONSIVE: short / small phone screens ---------- */
   @media (max-height: 700px){
     .play-btn{width:120px; height:120px; font-size:21px;}
@@ -599,6 +614,9 @@
   @media (max-width: 340px){
     .title{font-size:min(13vw,60px);}
     .stop-btn{padding:11px 30px; font-size:15px;}
+    .end-buttons{gap:8px;}
+    .again-btn{padding:14px 26px; font-size:15px;}
+    .home-btn{padding:12px 18px; font-size:14px;}
   }
 
   /* ---------- Landscape guard for phones ---------- */
@@ -723,7 +741,10 @@
     <div class="highscore-badge" id="endHighScoreBadge"><span class="hs-label">שיא:</span><span id="endHighScoreValue">0</span></div>
     <div class="newhigh-banner" id="newHighBanner">שיא חדש!<br>★★★</div>
     <div class="medal-wrap" id="medalWrap"></div>
-    <button id="againBtn" class="again-btn">שחק שוב</button>
+    <div class="end-buttons">
+      <button id="againBtn" class="again-btn">שחק שוב</button>
+      <button id="homeBtn" class="home-btn">לדף הבית</button>
+    </div>
   </div>
 
 </div>
@@ -735,6 +756,7 @@
   const endScreen = document.getElementById('endScreen');
   const playBtn = document.getElementById('playBtn');
   const againBtn = document.getElementById('againBtn');
+  const homeBtn = document.getElementById('homeBtn');
   const timerEl = document.getElementById('timer');
   const scoreEl = document.getElementById('score');
   const finalScoreEl = document.getElementById('finalScore');
@@ -925,7 +947,8 @@
   }
 
   playBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); startGame(); });
-  againBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); startGame(); });
+  againBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxCoin(); startGame(); });
+  homeBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); refreshHighScoreDisplay(); showScreen(startScreen); });
 
   function startGame(){
     score = 0;
