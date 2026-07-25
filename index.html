@@ -207,6 +207,48 @@
   }
   .shotclock.low{animation:pulse-red .5s infinite;}
   @keyframes pulse-red{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .pause-btn{
+    width:40px; height:40px;
+    border-radius:50%;
+    border:1px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.06);
+    color:var(--chalk);
+    font-size:16px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 10px rgba(0,0,0,.3);
+    align-self:center;
+  }
+  .pause-btn:active{transform:scale(.92);}
+
+  .pause-overlay{
+    position:absolute; inset:0; z-index:25;
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px;
+    background:rgba(8,6,17,.88);
+    backdrop-filter:blur(2px);
+  }
+  .pause-overlay.active{display:flex;}
+  .pause-title{
+    font-family:'Rubik',sans-serif; font-weight:900; font-size:34px;
+    color:var(--gold);
+    text-shadow:0 0 16px rgba(242,193,78,.6);
+  }
+  .pause-sub{
+    font-family:'Heebo',sans-serif; font-weight:600; font-size:14px;
+    color:#b7bfce;
+    margin-bottom:8px;
+  }
+  .resume-btn{
+    background:linear-gradient(180deg,#ff8a4d,var(--rim-orange));
+    border:none; color:#2a1204;
+    font-family:'Rubik',sans-serif; font-weight:900; font-size:17px;
+    padding:14px 40px; border-radius:40px;
+    box-shadow:0 6px 0 var(--rim-orange-dark), 0 0 22px rgba(255,94,26,.5);
+    cursor:pointer;
+  }
+  .resume-btn:active{transform:translateY(4px); box-shadow:0 2px 0 var(--rim-orange-dark);}
+
   .score-box{
     text-align:center;
     background:#0c0a18;
@@ -689,6 +731,7 @@
   <div id="gameScreen" class="screen">
     <div class="hud">
       <div class="shotclock" id="timer">90</div>
+      <button class="pause-btn" id="pauseBtn" aria-label="השהה">⏸</button>
       <div class="score-box">
         <div class="score-label">קליעות</div>
         <div class="score-value" id="score">0</div>
@@ -730,6 +773,12 @@
 
     <div class="countdown-overlay" id="countdownOverlay">
       <div class="countdown-num" id="countdownNum">3</div>
+    </div>
+
+    <div class="pause-overlay" id="pauseOverlay">
+      <div class="pause-title">⏸ הפסקה</div>
+      <div class="pause-sub">הזמן קפוא. לחץ להמשיך</div>
+      <button class="resume-btn" id="resumeBtn">המשך משחק</button>
     </div>
 
     <div class="aim-panel" id="aimHorizontal">
@@ -789,6 +838,9 @@
   const net = document.getElementById('net');
   const feedback = document.getElementById('feedback');
   const missPopup = document.getElementById('missPopup');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const pauseOverlay = document.getElementById('pauseOverlay');
+  const resumeBtn = document.getElementById('resumeBtn');
 
   const aimHorizontal = document.getElementById('aimHorizontal');
   const hBar = document.getElementById('hBar');
@@ -805,6 +857,7 @@
   let timeLeft = 90;
   let gameTimerInterval = null;
   let phase = 'idle'; // 'horizontal' | 'power' | 'animating'
+  let paused = false;
   let hRAF = null, pRAF = null;
   let hPos = 50, pPos = 0;
   let hDir = 1, pDir = 1;
@@ -977,6 +1030,8 @@
     score = 0;
     combo = 0;
     timeLeft = 90;
+    paused = false;
+    pauseOverlay.classList.remove('active');
     scoreEl.textContent = '0';
     timerEl.textContent = '90';
     timerEl.classList.remove('low');
@@ -1014,20 +1069,48 @@
     step();
   }
 
+  function timerTick(){
+    timeLeft--;
+    timerEl.textContent = timeLeft;
+    if(timeLeft <= 10) timerEl.classList.add('low');
+    if(timeLeft <= 3 && timeLeft > 0) sfxCountdown();
+    if(timeLeft <= 0){
+      sfxBuzzer();
+      shakeScreen();
+      endGame();
+    }
+  }
+
   function beginMatch(){
-    gameTimerInterval = setInterval(()=>{
-      timeLeft--;
-      timerEl.textContent = timeLeft;
-      if(timeLeft <= 10) timerEl.classList.add('low');
-      if(timeLeft <= 3 && timeLeft > 0) sfxCountdown();
-      if(timeLeft <= 0){
-        sfxBuzzer();
-        shakeScreen();
-        endGame();
-      }
-    }, 1000);
+    gameTimerInterval = setInterval(timerTick, 1000);
     startHorizontalPhase();
   }
+
+  function pauseGame(){
+    if(paused) return;
+    if(phase === 'idle') return;
+    paused = true;
+    clearInterval(gameTimerInterval);
+    cancelAnimationFrame(hRAF);
+    cancelAnimationFrame(pRAF);
+    document.getAnimations().forEach(a=>{ try{ if(a.playState==='running') a.pause(); }catch(e){} });
+    pauseOverlay.classList.add('active');
+    sfxClick();
+  }
+
+  function resumeGame(){
+    if(!paused) return;
+    paused = false;
+    pauseOverlay.classList.remove('active');
+    document.getAnimations().forEach(a=>{ try{ if(a.playState==='paused') a.play(); }catch(e){} });
+    gameTimerInterval = setInterval(timerTick, 1000);
+    if(phase === 'horizontal') hRAF = requestAnimationFrame(hFrameStep);
+    else if(phase === 'power') pRAF = requestAnimationFrame(pFrameStep);
+    sfxClick();
+  }
+
+  pauseBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); pauseGame(); });
+  resumeBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); resumeGame(); });
 
   function endGame(){
     clearInterval(gameTimerInterval);
@@ -1036,6 +1119,8 @@
     aimHorizontal.classList.remove('active');
     aimPower.classList.remove('active');
     phase = 'idle';
+    paused = false;
+    pauseOverlay.classList.remove('active');
     finalScoreEl.textContent = score;
 
     let medalClass, medalText, medalSub;
@@ -1069,6 +1154,23 @@
   }
 
   // ---------- HORIZONTAL AIM PHASE ----------
+  const H_SPEED = 1.6, P_SPEED = 2.1;
+
+  function hFrameStep(){
+    hPos += hDir * H_SPEED;
+    if(hPos >= 100){ hPos = 100; hDir = -1; }
+    if(hPos <= 0){ hPos = 0; hDir = 1; }
+    hMarker.style.left = hPos + '%';
+    hRAF = requestAnimationFrame(hFrameStep);
+  }
+  function pFrameStep(){
+    pPos += pDir * P_SPEED;
+    if(pPos >= 100){ pPos = 100; pDir = -1; }
+    if(pPos <= 0){ pPos = 0; pDir = 1; }
+    vMarker.style.bottom = pPos + '%';
+    pRAF = requestAnimationFrame(pFrameStep);
+  }
+
   function startHorizontalPhase(){
     if(timeLeft <= 0) return;
     phase = 'horizontal';
@@ -1076,18 +1178,11 @@
     aimPower.classList.remove('active');
     aimHorizontal.classList.add('active');
     hPos = 0; hDir = 1;
-    const speed = 1.6; // % per frame approx
-    function frame(){
-      hPos += hDir * speed;
-      if(hPos >= 100){ hPos = 100; hDir = -1; }
-      if(hPos <= 0){ hPos = 0; hDir = 1; }
-      hMarker.style.left = hPos + '%';
-      hRAF = requestAnimationFrame(frame);
-    }
-    hRAF = requestAnimationFrame(frame);
+    hRAF = requestAnimationFrame(hFrameStep);
   }
 
   function stopHorizontal(){
+    if(paused) return;
     if(phase !== 'horizontal') return;
     cancelAnimationFrame(hRAF);
     sfxClick();
@@ -1112,18 +1207,11 @@
     phase = 'power';
     aimPower.classList.add('active');
     pPos = 0; pDir = 1;
-    const speed = 2.1;
-    function frame(){
-      pPos += pDir * speed;
-      if(pPos >= 100){ pPos = 100; pDir = -1; }
-      if(pPos <= 0){ pPos = 0; pDir = 1; }
-      vMarker.style.bottom = pPos + '%';
-      pRAF = requestAnimationFrame(frame);
-    }
-    pRAF = requestAnimationFrame(frame);
+    pRAF = requestAnimationFrame(pFrameStep);
   }
 
   function stopPower(){
+    if(paused) return;
     if(phase !== 'power') return;
     cancelAnimationFrame(pRAF);
     sfxClick();
