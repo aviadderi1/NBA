@@ -1292,7 +1292,16 @@
     const baseUrl = window.location.origin + window.location.pathname;
     const shareUrl = baseUrl + '#g=' + encoded;
     const text = `בואו נתחרה במשחק "דניאל לNBA"! 🏀🏆 הצטרפו לקבוצת החברים שלי וראו מי מוביל בטבלה:\n${shareUrl}`;
-    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+
+    // Prefer the native share sheet (works great on iOS/Android and lets
+    // the person pick WhatsApp, Messages, etc). Falls back to a direct
+    // wa.me navigation — using location.href instead of window.open so it
+    // isn't blocked as a popup by Safari on iPhone.
+    if(navigator.share){
+      navigator.share({ text }).catch(()=>{});
+    } else {
+      window.location.href = 'https://wa.me/?text=' + encodeURIComponent(text);
+    }
   }
 
   function showScreen(el){
