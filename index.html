@@ -267,6 +267,75 @@
   .lb-name{flex:1; font-family:'Heebo',sans-serif; font-weight:700; font-size:14px; color:var(--chalk); text-align:right;}
   .lb-score{font-family:'Press Start 2P', monospace; font-size:12px; color:var(--green); text-shadow:0 0 6px rgba(57,255,157,.5);}
   .lb-empty{padding:16px; text-align:center; font-size:12px; color:#6a7386;}
+  .duel-row{
+    display:flex; flex-direction:column; gap:2px;
+    padding:9px 12px; border-radius:10px;
+    background:rgba(255,255,255,.03);
+  }
+  .duel-row-top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .duel-vs{font-family:'Heebo',sans-serif; font-weight:700; font-size:13px; color:var(--chalk);}
+  .duel-state{font-size:11px; color:#9aa3b4;}
+  .duel-state.win{color:var(--green); font-weight:700;}
+  .duel-state.lose{color:#ff5f5f; font-weight:700;}
+  .duel-state.draw{color:var(--gold); font-weight:700;}
+  .duel-play-btn{
+    background:linear-gradient(180deg,#ff8a4d,var(--rim-orange)); border:none; color:#2a1204;
+    font-family:'Rubik',sans-serif; font-weight:800; font-size:12px;
+    padding:7px 16px; border-radius:20px; cursor:pointer; flex-shrink:0;
+  }
+
+  .duel-invite-toggle-btn{
+    background:transparent; border:2px solid var(--neon-purple); color:#d9b8ff;
+    font-family:'Rubik',sans-serif; font-weight:800; font-size:13px;
+    padding:10px 22px; border-radius:30px; cursor:pointer;
+    box-shadow:0 0 12px rgba(138,63,252,.25);
+  }
+  .invite-picker-table{margin-top:10px; display:flex; flex-direction:column; gap:6px;}
+  .duel-invite-send-btn{
+    background:rgba(255,94,26,.15); border:1px solid rgba(255,94,26,.4); color:var(--chalk);
+    font-family:'Rubik',sans-serif; font-weight:700; font-size:12px;
+    padding:6px 14px; border-radius:16px; cursor:pointer; flex-shrink:0;
+  }
+  .invite-sent-status{
+    display:none; margin-top:8px; font-size:12px; color:var(--green);
+    text-align:center; font-weight:600;
+  }
+  .invite-sent-status.show{display:block;}
+
+  .invite-banner{
+    display:none; flex-direction:column; align-items:center; gap:10px;
+    width:100%; max-width:380px; margin-bottom:14px;
+    padding:14px 18px; border-radius:16px;
+    background:rgba(255,94,26,.1); border:1px solid rgba(255,94,26,.4);
+    box-shadow:0 0 16px rgba(255,94,26,.2);
+  }
+  .invite-banner.show{display:flex;}
+  .invite-banner.declined{background:rgba(255,95,95,.08); border-color:rgba(255,95,95,.35);}
+  .invite-title{font-family:'Rubik',sans-serif; font-weight:800; font-size:15px; color:var(--chalk); text-align:center;}
+  .invite-declined-line{font-size:13px; color:#ff5f5f; font-weight:700; text-align:center;}
+  .invite-actions{display:flex; gap:10px;}
+  .invite-approve-btn{
+    background:linear-gradient(180deg,#3ddc84,#1fae63); border:none; color:#052a15;
+    font-family:'Rubik',sans-serif; font-weight:800; font-size:13px;
+    padding:9px 20px; border-radius:20px; cursor:pointer;
+  }
+  .invite-decline-btn{
+    background:transparent; border:2px solid #ff5f5f; color:#ff5f5f;
+    font-family:'Rubik',sans-serif; font-weight:800; font-size:13px;
+    padding:8px 20px; border-radius:20px; cursor:pointer;
+  }
+
+  .duel-result-panel{
+    display:none; flex-direction:column; align-items:center; gap:4px;
+    margin-bottom:14px; padding:12px 22px; border-radius:16px;
+    background:rgba(255,94,26,.08); border:1px solid rgba(255,94,26,.3);
+  }
+  .duel-result-panel.show{display:flex;}
+  .duel-result-title{font-family:'Rubik',sans-serif; font-weight:900; font-size:16px;}
+  .duel-result-title.win{color:var(--green);}
+  .duel-result-title.lose{color:#ff5f5f;}
+  .duel-result-title.draw{color:var(--gold);}
+  .duel-result-sub{font-size:12px; color:#9aa3b4;}
 
   .group-share-btn{
     background:linear-gradient(180deg,#3ddc84,#1fae63);
@@ -718,6 +787,12 @@
   }
   .medal-ball{display:flex; align-items:center; justify-content:center;}
   .trophy-svg{width:128px; height:auto; display:block;}
+  .medal-ball--ultra .trophy-svg{width:200px; animation:ultraPulse 1.8s ease-in-out infinite;}
+  @keyframes ultraPulse{
+    0%,100%{filter:drop-shadow(0 12px 20px rgba(168,85,247,.7));}
+    50%{filter:drop-shadow(0 16px 32px rgba(168,85,247,1)) drop-shadow(0 0 30px rgba(216,140,255,.6));}
+  }
+  #endScreen{overflow-y:auto; padding-top:calc(env(safe-area-inset-top) + 20px); padding-bottom:calc(env(safe-area-inset-bottom) + 20px);}
   .legend-trophy{width:100%; height:100%;}
   .medal-text{font-weight:800; font-size:17px;}
   .medal-sub{font-size:13px; color:#8b93a5; font-weight:600;}
@@ -949,6 +1024,9 @@
       </div>
       <div class="lb-status" id="lbStatus">טוען...</div>
 
+      <div class="invite-banner" id="incomingInviteBanner"></div>
+      <div class="invite-banner declined" id="declinedNoticeBanner"></div>
+
       <div class="lb-section">
         <div class="lb-section-title">🕐 משחק רגיל</div>
         <div class="lb-table" id="lbTimed"></div>
@@ -957,6 +1035,18 @@
       <div class="lb-section">
         <div class="lb-section-title">♾️ ללא זמן</div>
         <div class="lb-table" id="lbEndless"></div>
+      </div>
+
+      <div class="lb-section">
+        <div class="lb-section-title">⚔️ הדו-קרבים שלי</div>
+        <div class="lb-table" id="duelsTable"></div>
+      </div>
+
+      <div class="lb-section">
+        <div class="lb-section-title">🎮 דו-קרב חדש</div>
+        <button class="duel-invite-toggle-btn" id="duelInviteToggleBtn">בחר יריב להזמנה</button>
+        <div class="lb-table invite-picker-table" id="invitePickerTable" style="display:none;"></div>
+        <div class="invite-sent-status" id="inviteSentStatus"></div>
       </div>
 
       <button class="group-share-btn" id="shareGroupBtn">📱 שתף בוואטסאפ</button>
@@ -1052,6 +1142,7 @@
     <div class="final-label" id="finalLabel">קליעות בדקה וחצי</div>
     <div class="highscore-badge" id="endHighScoreBadge"><span class="hs-label">שיא:</span><span id="endHighScoreValue">0</span></div>
     <div class="newhigh-banner" id="newHighBanner">שיא חדש!<br>★★★</div>
+    <div class="duel-result-panel" id="duelResultPanel"></div>
     <div class="medal-wrap" id="medalWrap"></div>
     <div class="end-buttons">
       <button id="againBtn" class="again-btn">שחק שוב</button>
@@ -1414,7 +1505,239 @@
     }
   }
 
-  function renderLbSection(container, players, mode){
+  // ---------- 1v1 DUELS (regular/timed mode only) ----------
+  let activeDuelId = null;
+  let activeDuelOpponent = null;
+  const DUEL_CACHE_KEY = 'daniel-nba-duel-cache';
+
+  function safeKey(name){ return encodeURIComponent(name).replace(/\./g,'%2E'); }
+
+  function loadDuelCache(){
+    try{ return JSON.parse(localStorage.getItem(DUEL_CACHE_KEY) || '{}'); }catch(e){ return {}; }
+  }
+  function saveDuelCache(duels){
+    try{ localStorage.setItem(DUEL_CACHE_KEY, JSON.stringify(duels || {})); }catch(e){}
+  }
+
+  async function fbDelete(path){
+    try{
+      await fetch(dbUrl(path), { method:'DELETE' });
+    }catch(e){}
+  }
+
+  async function sendDuelInvite(opponentName){
+    if(!myGroupId || !isOnlineConfigured()) return;
+    savePlayerNameFromInput();
+    const inviteId = 'i' + Date.now() + Math.random().toString(36).slice(2,6);
+    const invite = {
+      from: playerName,
+      to: opponentName,
+      status: 'pending',
+      createdAt: Date.now()
+    };
+    try{
+      await fbPut(`groups/${myGroupId}/duelInvites/${inviteId}`, invite);
+    }catch(e){ return; }
+    document.getElementById('invitePickerTable').style.display = 'none';
+    const statusEl = document.getElementById('inviteSentStatus');
+    if(statusEl){
+      statusEl.textContent = `הזמנה נשלחה ל-${opponentName}! ממתין לאישור...`;
+      statusEl.classList.add('show');
+    }
+  }
+
+  async function fetchInvites(){
+    if(!myGroupId || !isOnlineConfigured()) return {};
+    try{
+      const invites = await fbGet(`groups/${myGroupId}/duelInvites`);
+      return invites || {};
+    }catch(e){ return {}; }
+  }
+
+  async function checkInvites(){
+    const invites = await fetchInvites();
+    const ids = Object.keys(invites);
+
+    // Incoming invite waiting on ME to approve/decline
+    const incoming = ids.find(id => invites[id].to === playerName && invites[id].status === 'pending');
+    const incomingBanner = document.getElementById('incomingInviteBanner');
+    if(incoming && incomingBanner){
+      const inv = invites[incoming];
+      incomingBanner.innerHTML = `
+        <div class="invite-title">${inv.from} הזמין אותך למשחק דו-קרב</div>
+        <div class="invite-actions">
+          <button class="invite-approve-btn" data-invite="${incoming}" data-from="${inv.from}">מאשר ✔️</button>
+          <button class="invite-decline-btn" data-invite="${incoming}">לא מאשר ✖️</button>
+        </div>`;
+      incomingBanner.classList.add('show');
+    } else if(incomingBanner){
+      incomingBanner.classList.remove('show');
+      incomingBanner.innerHTML = '';
+    }
+
+    // My outgoing invites that were declined — notify me once, then clean up
+    const declinedMine = ids.filter(id => invites[id].from === playerName && invites[id].status === 'declined');
+    const declinedBanner = document.getElementById('declinedNoticeBanner');
+    if(declinedMine.length && declinedBanner){
+      declinedBanner.innerHTML = declinedMine.map(id => `<div class="invite-declined-line">${invites[id].to} לא מאשר את הדו-קרב</div>`).join('');
+      declinedBanner.classList.add('show');
+      declinedMine.forEach(id => fbDelete(`groups/${myGroupId}/duelInvites/${id}`));
+    } else if(declinedBanner){
+      declinedBanner.classList.remove('show');
+      declinedBanner.innerHTML = '';
+    }
+  }
+
+  async function approveInvite(inviteId, fromName){
+    const duelId = 'd' + Date.now() + Math.random().toString(36).slice(2,6);
+    const duel = {
+      challenger: fromName,
+      opponent: playerName,
+      scores: {},
+      createdAt: Date.now(),
+      status: 'pending'
+    };
+    try{ await fbPut(`groups/${myGroupId}/duels/${duelId}`, duel); }catch(e){}
+    await fbDelete(`groups/${myGroupId}/duelInvites/${inviteId}`);
+    startGame('timed', duelId, fromName);
+  }
+
+  async function declineInvite(inviteId){
+    try{ await fbPut(`groups/${myGroupId}/duelInvites/${inviteId}/status`, 'declined'); }catch(e){}
+    checkInvites();
+  }
+
+  function renderInvitePicker(players){
+    const table = document.getElementById('invitePickerTable');
+    if(!table) return;
+    const names = Object.keys(players || {}).filter(n => n !== playerName);
+    if(names.length === 0){
+      table.innerHTML = `<div class="lb-empty">אין עדיין חברים אחרים בקבוצה.</div>`;
+      return;
+    }
+    table.innerHTML = names.map(n => `
+      <div class="lb-row">
+        <div class="lb-name">${n}</div>
+        <button class="duel-invite-send-btn" data-name="${n}">הזמן ⚔️</button>
+      </div>`).join('');
+  }
+
+  async function fetchDuels(){
+    if(!myGroupId) return {};
+    if(!isOnlineConfigured()) return loadDuelCache();
+    try{
+      const duels = await fbGet(`groups/${myGroupId}/duels`);
+      const clean = duels || {};
+      saveDuelCache(clean);
+      return clean;
+    }catch(e){
+      return loadDuelCache();
+    }
+  }
+
+  async function submitDuelScore(duelId, s){
+    if(!isOnlineConfigured() || !myGroupId || !duelId) return;
+    try{
+      await fbPut(`groups/${myGroupId}/duels/${duelId}/scores/${safeKey(playerName)}`, s);
+    }catch(e){}
+  }
+
+  function renderDuels(duels){
+    const container = document.getElementById('duelsTable');
+    if(!container) return;
+    const mine = Object.keys(duels || {})
+      .map(id => ({ id, ...duels[id] }))
+      .filter(d => d.challenger === playerName || d.opponent === playerName)
+      .sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+
+    if(mine.length === 0){
+      container.innerHTML = `<div class="lb-empty">אין דו-קרבים עדיין. לחצו ⚔️ ליד שם חבר בטבלת "משחק רגיל" כדי לאתגר אותו!</div>`;
+      return;
+    }
+
+    container.innerHTML = mine.map(d=>{
+      const other = d.challenger === playerName ? d.opponent : d.challenger;
+      const myScore = d.scores && d.scores[playerName];
+      const otherScore = d.scores && d.scores[other];
+      const iPlayed = myScore !== undefined && myScore !== null;
+      const otherPlayed = otherScore !== undefined && otherScore !== null;
+
+      let stateHtml, actionHtml = '';
+      if(iPlayed && otherPlayed){
+        if(myScore > otherScore) stateHtml = `<span class="duel-state win">ניצחת! ${myScore}-${otherScore} 🏆</span>`;
+        else if(myScore < otherScore) stateHtml = `<span class="duel-state lose">הפסדת ${myScore}-${otherScore}</span>`;
+        else stateHtml = `<span class="duel-state draw">תיקו! ${myScore}-${otherScore}</span>`;
+      } else if(iPlayed && !otherPlayed){
+        stateHtml = `<span class="duel-state">שיחקת (${myScore}) • מחכה ל-${other}</span>`;
+      } else {
+        stateHtml = `<span class="duel-state">התור שלך</span>`;
+        actionHtml = `<button class="duel-play-btn" data-duel="${d.id}" data-opponent="${other}">שחק ⚔️</button>`;
+      }
+
+      return `
+      <div class="duel-row">
+        <div class="duel-row-top">
+          <div class="duel-vs">אתה ⚔️ ${other}</div>
+          ${actionHtml}
+        </div>
+        ${stateHtml}
+      </div>`;
+    }).join('');
+  }
+
+  async function refreshDuels(){
+    const duels = await fetchDuels();
+    renderDuels(duels);
+  }
+
+  document.addEventListener('pointerdown', (e)=>{
+    const inviteToggle = e.target.closest('#duelInviteToggleBtn');
+    if(inviteToggle){
+      e.preventDefault();
+      sfxClick();
+      const table = document.getElementById('invitePickerTable');
+      const statusEl = document.getElementById('inviteSentStatus');
+      if(statusEl) statusEl.classList.remove('show');
+      const willShow = table.style.display === 'none' || !table.style.display;
+      table.style.display = willShow ? 'flex' : 'none';
+      if(willShow) refreshInvitePicker();
+      return;
+    }
+    const sendBtn = e.target.closest('.duel-invite-send-btn');
+    if(sendBtn){
+      e.preventDefault();
+      sfxCoin();
+      sendDuelInvite(sendBtn.dataset.name);
+      return;
+    }
+    const approveBtn = e.target.closest('.invite-approve-btn');
+    if(approveBtn){
+      e.preventDefault();
+      sfxCoin();
+      approveInvite(approveBtn.dataset.invite, approveBtn.dataset.from);
+      return;
+    }
+    const declineBtn = e.target.closest('.invite-decline-btn');
+    if(declineBtn){
+      e.preventDefault();
+      sfxClick();
+      declineInvite(declineBtn.dataset.invite);
+      return;
+    }
+    const playBtn2 = e.target.closest('.duel-play-btn');
+    if(playBtn2){
+      e.preventDefault();
+      sfxCoin();
+      startGame('timed', playBtn2.dataset.duel, playBtn2.dataset.opponent);
+    }
+  });
+
+  async function refreshInvitePicker(){
+    const players = await fetchGroupPlayers();
+    renderInvitePicker(players);
+  }
+
+  function renderLbSection(container, players, mode, allowChallenge){
     const rows = Object.keys(players || {})
       .map(name => ({ name, score: (players[name] && players[name][mode]) || 0 }))
       .filter(r => r.score > 0)
@@ -1444,8 +1767,10 @@
     if(lbStatusEl()) lbStatusEl().textContent = isOnlineConfigured() ? 'מרענן...' : 'מצב מקומי בלבד (לא הוגדר חיבור אונליין)';
     await pushMyScoreToGroup();
     const players = await fetchGroupPlayers();
-    renderLbSection(document.getElementById('lbTimed'), players, 'timed');
-    renderLbSection(document.getElementById('lbEndless'), players, 'endless');
+    renderLbSection(document.getElementById('lbTimed'), players, 'timed', true);
+    renderLbSection(document.getElementById('lbEndless'), players, 'endless', false);
+    await refreshDuels();
+    await checkInvites();
     if(lbStatusEl()){
       lbStatusEl().textContent = isOnlineConfigured()
         ? 'מעודכן • ' + new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})
@@ -1639,8 +1964,10 @@
   refreshGroupBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); refreshGroupLeaderboard(); });
   leaveGroupBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); sfxClick(); leaveGroup(); });
 
-  function startGame(mode){
+  function startGame(mode, duelId, opponentName){
     gameMode = mode || 'timed';
+    activeDuelId = duelId || null;
+    activeDuelOpponent = opponentName || null;
     savePlayerNameFromInput();
     score = 0;
     combo = 0;
@@ -1784,8 +2111,9 @@
       medalClass='none'; medalText='בלי גביע הפעם'; medalSub='נסה שוב ותשתפר';
     }
 
+    const isUltra = medalClass === 'ultra';
     medalWrap.innerHTML = `
-      <div class="medal-ball">${trophySVG(medalClass, 'end-'+Date.now())}</div>
+      <div class="medal-ball ${isUltra ? 'medal-ball--ultra' : ''}">${trophySVG(medalClass, 'end-'+Date.now())}</div>
       <div class="medal-text">${medalText}</div>
       <div class="medal-sub">${medalSub}</div>
     `;
@@ -1796,6 +2124,31 @@
     if(loadMyGroupId()) pushMyScoreToGroup();
     refreshHighScoreDisplay();
     newHighBanner.classList.remove('show');
+
+    const duelResultPanel = document.getElementById('duelResultPanel');
+    duelResultPanel.classList.remove('show');
+    duelResultPanel.innerHTML = '';
+    const finishedDuelId = activeDuelId;
+    const finishedOpponent = activeDuelOpponent;
+    if(finishedDuelId){
+      submitDuelScore(finishedDuelId, score).then(async ()=>{
+        const duels = await fetchDuels();
+        const d = duels[finishedDuelId];
+        const otherScore = d && d.scores ? d.scores[finishedOpponent] : undefined;
+        let html;
+        if(otherScore !== undefined && otherScore !== null){
+          if(score > otherScore) html = `<div class="duel-result-title win">ניצחת את ${finishedOpponent}! 🏆</div><div class="duel-result-sub">${score} - ${otherScore}</div>`;
+          else if(score < otherScore) html = `<div class="duel-result-title lose">הפסדת ל-${finishedOpponent}</div><div class="duel-result-sub">${score} - ${otherScore}</div>`;
+          else html = `<div class="duel-result-title draw">תיקו מול ${finishedOpponent}!</div><div class="duel-result-sub">${score} - ${otherScore}</div>`;
+        } else {
+          html = `<div class="duel-result-title">התור שלך נשלח! ⚔️</div><div class="duel-result-sub">ממתין ש-${finishedOpponent} ישחק את הדו-קרב</div>`;
+        }
+        duelResultPanel.innerHTML = html;
+        duelResultPanel.classList.add('show');
+      });
+    }
+    activeDuelId = null;
+    activeDuelOpponent = null;
 
     setTimeout(()=>{
       showScreen(endScreen);
